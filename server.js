@@ -1,24 +1,36 @@
-var express = require('express');
-var morgan = require('morgan');
-var path = require('path');
+function getUserProperties() {
 
-var app = express();
-app.use(morgan('combined'));
+    // Replace the placeholder value with the target user's credentials.
+    var targetUser = "domainName\\userName";
 
-app.get('/', function (req, res) {
-  res.sendFile(path.join(__dirname, 'ui', 'index.html'));
-});
+    // Get the current client context and PeopleManager instance.
+    var clientContext = new SP.ClientContext.get_current();
+    var peopleManager = new SP.UserProfiles.PeopleManager(clientContext);
 
-app.get('/ui/style.css', function (req, res) {
-  res.sendFile(path.join(__dirname, 'ui', 'style.css'));
-});
+    // Get user properties for the target user.
+    // To get the PersonProperties object for the current user, use the
+    // getMyProperties method.
+    personProperties = peopleManager.getPropertiesFor(targetUser);
 
-app.get('/ui/madi.png', function (req, res) {
-  res.sendFile(path.join(__dirname, 'ui', 'madi.png'));
-});
+    // Load the PersonProperties object and send the request.
+    clientContext.load(personProperties);
+    clientContext.executeQueryAsync(onRequestSuccess, onRequestFail);
+}
 
+// This function runs if the executeQueryAsync call succeeds.
+function onRequestSuccess() {
 
-var port = 8080; // Use 8080 for local development because you might already have apache running on 80
-app.listen(8080, function () {
-  console.log(`IMAD course app listening on port ${port}!`);
-});
+    // Get a property directly from the PersonProperties object.
+    var messageText = " \"DisplayName\" property is "
+        + personProperties.get_displayName();
+
+    // Get a property from the UserProfileProperties property.
+    messageText += "<br />\"Department\" property is "
+        + personProperties.get_userProfileProperties()['Department'];
+    $get("results").innerHTML = messageText;
+}
+
+// This function runs if the executeQueryAsync call fails.
+function onRequestFail(sender, args) {
+    $get("results").innerHTML = "Error: " + args.get_message();
+}
